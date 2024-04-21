@@ -6,5 +6,5 @@ This project is an implementation of the classic game Six Men's Morris, where a 
 ## Installation
 1. Clone this repository to your local machine.
 2. Make sure you have Python and Pygame installed.
-3. Run pip install pygame if Pygame is not installed.
-4. Navigate to the project directory and run python main.py to start the game.
+3. Run *_pip install pygame_** if Pygame is not installed.
+4. Navigate to the project directory and run python **main.py** to start the game.
