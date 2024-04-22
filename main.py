@@ -1,3 +1,11 @@
+'''
+    John Patrick I. Marasigan
+    BSCS-3B-M
+    Machine Problem 4
+    Technological University of the Philippines
+'''
+
+
 from time import sleep
 import pygame
 import sys
@@ -42,7 +50,6 @@ BLACK = (0, 0, 0)
 HIGHLIGHT = (40,71,97)
 TRANSPARENT = (0, 0, 0, 0)
 
-
 # Initialization
 piece_coordinates = [
     (34, 37),              (274, 37),              (515, 37),         # first row
@@ -66,7 +73,7 @@ deployed_pieces = {1: [], 2: []}          # Dictionary to store deployed pieces 
 num_pieces_deployed = 0
 all_pieces_deployed = False
 selected_piece = None
-recommend_move = []
+recommend_move = []                       # adjacent moves to selected piece
 is_removed_piece = False
 winner = None
 prev_player = None
@@ -78,6 +85,7 @@ num_piece = 0
 piece_text = font.render(f"Drop your ({num_piece+1}) piece.", True, BLACK)
 text_rect = None
 
+# Function that draws the state of the board
 def draw_board():
     global selected_piece
 
@@ -103,32 +111,21 @@ def draw_board():
     screen.blit(piece_text, (x, 600))
 
 
-# Function to handle player input
-def deploy_piece():
-    global prev_player, current_player, deployed_pieces, num_pieces_deployed, num_piece, piece_text, is_removed_piece, winner
+# Evaluate future states of the board using the minimax algorithm
+def evaluate_board(deployed_pieces):
+    player_score = 0
+    ai_score = 0
 
-    if not winner:
-        if pygame.mouse.get_pressed()[0]:       # Check for mouse button press event
-            mouse_pos = pygame.mouse.get_pos()
-            for piece_coord in piece_coordinates:
-                if pygame.Rect(piece_coord, (50, 50)).collidepoint(mouse_pos):
-                    if piece_coord not in [piece for pieces in deployed_pieces.values() for piece in pieces]:
-                        deployed_pieces[current_player].append(piece_coord)
-                        print(f"Player deploy piece at {piece_coord}")
-                        num_pieces_deployed += 1
-                        prev_player = current_player
-                        current_player = 2
-                        is_removed_piece = False
-                        if len(deployed_pieces[1]) < 6:
-                            num_piece = num_piece + 1
-                            piece_text = font.render(f"Drop your ({num_piece+1}) piece.", True, BLACK)
-                        else:
-                            piece_text = font.render(f"Move your selected piece", True, BLACK)
-        
-    return
+    for win_pos in winning_positions:
+        if all(pos in deployed_pieces[1] for pos in win_pos):
+            player_score += 1
+        if all(pos in deployed_pieces[2] for pos in win_pos):
+            ai_score += 1
+
+    return player_score - ai_score
 
 
-
+# Checks who created a mill in future state
 def test_mill(state):
     global winning_positions
 
@@ -140,6 +137,7 @@ def test_mill(state):
     return None
 
 
+# Maximizing AI moves
 def max_value(state, alpha, beta, depth, new_move):
     global all_pieces_deployed, piece_coordinates, num_pieces_deployed
     
@@ -177,6 +175,7 @@ def max_value(state, alpha, beta, depth, new_move):
     return max_val
 
 
+# Minimizing Player moves
 def min_value(state, alpha, beta, depth, new_move):
     global all_pieces_deployed, piece_coordinates, num_pieces_deployed
     
@@ -214,6 +213,7 @@ def min_value(state, alpha, beta, depth, new_move):
     return min_val
 
 
+# Implementation of Alpha-Beta Pruning Algorithm for AI
 def minimax_decision(deployed_pieces):
     global piece_coordinates, all_pieces_deployed, num_pieces_deployed
     max_val = -math.inf
@@ -253,10 +253,10 @@ def minimax_decision(deployed_pieces):
     return prev_move, max_new_move
 
 
+# Function that returns AI's valid moves for the selected piece
 def is_valid_move_ai(state, move, new_move):
     global piece_coordinates
     next_state = copy.deepcopy(state)
-    prev_state = copy.deepcopy(state)
     new_move = None
 
     if len(state[2]) == 3:
@@ -511,7 +511,7 @@ def is_valid_move_ai(state, move, new_move):
     return next_state, new_move
 
 
-
+# Function that returns Player's valid moves for the selected piece
 def is_valid_move_human(state, move, new_move):
     global piece_coordinates
     next_state = copy.deepcopy(state)
@@ -770,6 +770,32 @@ def is_valid_move_human(state, move, new_move):
 
 
 
+# Function to handle player input
+def deploy_piece():
+    global prev_player, current_player, deployed_pieces, num_pieces_deployed, num_piece, piece_text, is_removed_piece, winner
+
+    if not winner:
+        if pygame.mouse.get_pressed()[0]:       # Check for mouse button press event
+            mouse_pos = pygame.mouse.get_pos()
+            for piece_coord in piece_coordinates:
+                if pygame.Rect(piece_coord, (50, 50)).collidepoint(mouse_pos):
+                    if piece_coord not in [piece for pieces in deployed_pieces.values() for piece in pieces]:
+                        deployed_pieces[current_player].append(piece_coord)
+                        print(f"Player deploy piece at {piece_coord}")
+                        num_pieces_deployed += 1
+                        prev_player = current_player
+                        current_player = 2
+                        is_removed_piece = False
+                        if len(deployed_pieces[1]) < 6:
+                            num_piece = num_piece + 1
+                            piece_text = font.render(f"Drop your ({num_piece+1}) piece.", True, BLACK)
+                        else:
+                            piece_text = font.render(f"Move your selected piece", True, BLACK)
+        
+    return
+
+
+# Function that deploy player piece on the board
 def ai_deploy_piece():
     global prev_player, current_player, deployed_pieces, num_pieces_deployed, is_removed_piece, winner
 
@@ -785,6 +811,7 @@ def ai_deploy_piece():
     return
 
 
+# Function that moves Player's selected piece to a new position
 def move_piece():
     global prev_player, current_player, selected_piece, piece_coordinates, deployed_pieces, recommend_move, winner, is_removed_piece, previous_winning_moves
 
@@ -862,6 +889,7 @@ def move_piece():
                     return
 
 
+# For AI's move to a new position
 def ai_move():
     global prev_player, current_player, deployed_pieces, is_removed_piece, num_pieces_deployed, winner
 
@@ -882,36 +910,14 @@ def ai_move():
     return
 
 
-def game_over():
-    global current_player, deployed_pieces, winning_positions
-
-    for player_pieces in deployed_pieces[current_player]:
-        for win_pos in winning_positions:
-            if all(piece in player_pieces for piece in win_pos):
-                return True
-
-    return False
-
-
-def evaluate_board(deployed_pieces):
-    player_score = 0
-    ai_score = 0
-
-    for win_pos in winning_positions:
-        if all(pos in deployed_pieces[1] for pos in win_pos):
-            player_score += 1
-        if all(pos in deployed_pieces[2] for pos in win_pos):
-            ai_score += 1
-
-    return player_score - ai_score
-
-
+# Deploy the chosen position of piece to the board
 def apply_deploy(move):
     global current_player, deployed_pieces, num_pieces_deployed
     deployed_pieces[current_player].append(move)    # current player = 2; AI
     num_pieces_deployed += 1
 
-    
+
+# Move the chosen position of piece to the new position on the board
 def apply_move(prev_move, new_move):
     global current_player, deployed_pieces, previous_winning_moves
     index = deployed_pieces[2].index(prev_move)
@@ -919,6 +925,7 @@ def apply_move(prev_move, new_move):
     deployed_pieces[2][index] = new_move
 
 
+# Function that exclude the pieces that are in a mill 
 def exclude_mill_pieces(pieces, player):
     global winning_positions
     non_winning_pieces = []
@@ -935,6 +942,17 @@ def exclude_mill_pieces(pieces, player):
     return non_winning_pieces 
 
 
+# To avoid repeating a winning_move without moving a piece
+def get_previous_winning_moves(pos, current_player):
+    global deployed_pieces, previous_winning_moves
+
+    if all(piece in deployed_pieces[current_player] for piece in pos):
+        previous_winning_moves[current_player].append(pos)
+    
+    return
+
+
+# Function that checks if there is a winner or created mill
 def check_winner(player):
     global current_player, winning_positions, selected_piece, is_removed_piece, deployed_pieces, all_pieces_deployed, winner, piece_text, num_piece, previous_winning_moves
 
@@ -1007,14 +1025,6 @@ def check_winner(player):
     return False
 
 
-def get_previous_winning_moves(pos, current_player):
-    global deployed_pieces, previous_winning_moves
-
-    if all(piece in deployed_pieces[current_player] for piece in pos):
-        previous_winning_moves[current_player].append(pos)
-    
-    return
-
 # MAIN METHOD
 if __name__ == "__main__":
     running = True
@@ -1068,8 +1078,4 @@ if __name__ == "__main__":
     pygame.time.wait(2000)
     pygame.quit()
     sys.exit()
-
-
-
-
 
